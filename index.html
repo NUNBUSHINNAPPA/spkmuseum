@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивный Музей</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            overflow: hidden;
+        }
+
+        /* Приветственное меню с видео */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            text-align: center;
+            padding: 20px;
+            background-color: #000;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #welcomeVideo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .welcome-screen h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 10;
+            position: relative;
+        }
+
+        .welcome-screen p {
+            color: #f0f0f0;
+            font-size: 1.4rem;
+            max-width: 800px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+            z-index: 10;
+            position: relative;
+        }
+
+        .sound-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 10;
+            font-size: 16px;
+        }
+
+        .sound-control:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .welcome-btn {
+            background: linear-gradient(to right, #ff8a00, #da1b60);
+            color: white;
+            border: none;
+            padding: 18px 45px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            font-weight: bold;
+            letter-spacing: 1px;
+            z-index: 10;
+            position: relative;
+        }
+
+        .welcome-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.4);
+            background: linear-gradient(to right, #ff8a00, #ff0080);
+        }
+
+        .welcome-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Основной контент */
+        .museum-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('photo/museum.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: none;
+        }
+
+        /* Смена вида/локации */
+        .location-switcher {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+        }
+
+        .location-btn {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .location-btn:hover {
+            background-color: rgba(0, 0, 0, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .exhibit {
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .exhibit:hover {
+            transform: scale(1.05);
+        }
+
+        .zoom-button {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-size: 12px;
+        }
+
+        .exhibit:hover .zoom-button {
+            opacity: 1;
+        }
+
+        .exhibit-1 { top: 20%; left: 40%; width: 70px; height: 130px; }
+        .exhibit-2 { top: 10%; left: 20%; width: 90px; height: 130px; }
+        .exhibit-3 { top: 40%; left: 20%; width: 70px; height: 110px; }
+        .exhibit-4 { top: 40%; left: 30%; width: 90px; height: 200px; }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            animation: modalAppear 0.3s ease;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        @keyframes modalAppear {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .exhibit-image {
+            width: 100%;
+            height: 600px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .exhibit-description {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            color: #333;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .quiz-container {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .question {
+            font-size: 18px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option {
+            padding: 12px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option:hover {
+            background-color: #e9ecef;
+        }
+
+        .option.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+        }
+
+        .option.incorrect {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .result-message {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .correct-message {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .incorrect-message {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .score-display {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 20px;
+            font-size: 18px;
+            z-index: 100;
+        }
+
+        .pass-test-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        .pass-test-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Приветственное меню -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="video-container">
+            <video id="welcomeVideo" autoplay muted loop>
+                <source src="photo/putin.mp4" type="video/mp4">
+                Ваш браузер не поддерживает видео.
+            </video>
+            <div class="video-overlay"></div>
+        </div>
+
+        <h1>Добро пожаловать в музей колледжа!</h1>
+        <p>Центр патриотического воспитания батальона им. Шаймуратова</p>
+
+        <button class="sound-control" id="soundControl">Включить звук</button>
+        <button class="welcome-btn" onclick="startMuseum()">Войти</button>
+    </div>
+
+    <!-- Основной контент музея -->
+    <div class="museum-container" id="museumContainer">
+        <!-- Экспонаты -->
+        <div class="exhibit exhibit-1" data-id="1">
+            <div class="zoom-button">Приблизить</div>
+        </div>
+
+        <div class="exhibit exhibit-2" data-id="2">
+            <div class="zoom-button">Приблизить</div>
+        </div>
+
+        <div class="exhibit exhibit-3" data-id="3">
+            <div class="zoom-button">Приблизить</div>
+        </div>
+
+        <div class="exhibit exhibit-4" data-id="4">
+            <div class="zoom-button">Приблизить</div>
+        </div>
+
+        <!-- Кнопки смены локации -->
+        <div class="location-switcher">
+            <button class="location-btn" onclick="switchLocation('museum')">Музей</button>
+            <button class="location-btn" onclick="switchLocation('drugoivid')">Другое Вид</button>
+        </div>
+
+        <!-- Счетчик очков -->
+        <div class="score-display">
+            Очки: <span id="score">0</span> |
+            Правильно: <span id="correct">0</span> |
+            Неправильно: <span id="incorrect">0</span>
+        </div>
+
+        <!-- Модальное окно -->
+        <div class="modal" id="exhibitModal">
+            <div class="modal-content">
+                <button class="close-btn">&times;</button>
+                <img id="modalImage" class="exhibit-image" src="" alt="Экспонат">
+                <p id="modalDescription" class="exhibit-description"></p>
+                <button class="pass-test-btn" onclick="startQuiz()">Пройти тест</button>
+
+                <!-- Викторина -->
+                <div id="quizContainer" class="quiz-container hidden">
+                    <div id="question" class="question"></div>
+                    <div id="options" class="options"></div>
+                    <div id="resultMessage" class="result-message hidden"></div>
+                    <button id="nextBtn" class="pass-test-btn hidden">Следующий вопрос</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Функция для входа в музей
+        function startMuseum() {
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('museumContainer').style.display = 'block';
+        }
+
+        // Функция смены локации
+        function switchLocation(location) {
+            const museumContainer = document.getElementById('museumContainer');
+
+            if (location === 'museum') {
+                museumContainer.style.backgroundImage = "url('photo/museum.jpg')";
+            } else if (location === 'drugoivid') {
+                museumContainer.style.backgroundImage = "url('photo/drugoivid.jpg')";
+            }
+        }
+
+        // Данные о экспонатах
+        const exhibits = {
+            1: {
+                image: 'photo/ooo.jpg',
+                description: 'ВКПО 3.0 – новое поколение экипировки личного состава Вооруженных Сил Российской Федерации. Комплект разработан специалистами ООО «Триада-ТКО» при участии Вещевого управления Министерства обороны РФ\n\nМассово переодевать военнослужащих в новую форму стали, понятное дело, в зоне СВО. Первые образцы нового камуфляжа расцветки «мультикам» стали появляться здесь ещё в 2022-м, и после её «обкатки» в боевых условиях Минобороны РФ приняло решение переодеть всех бойцов, начиная с группировки войск «Запад»\n\n«Мультикам» порой сравнивают со стандартами НАТО. Некое сходство, действительно, есть — за счёт семи оттенков, которые обеспечивают высокую степень маскировки бойца как в летних, так и в зимних условиях данного региона\n\nОднако расцветка военной формы, предназначенной для полевых условий, в российской армии имеется в различных вариантах. В жарких условиях используется камуфляж под названием «Бежевка» или так называемая «Поросячка»\n\nПоследняя имеет красноватый оттенок, который позволяет в большей степени маскироваться в условиях горно-пустынной местности. В армии сохранилась и такая расцветка как «Пиксель» и «Цифра». А, например, «Мох» пользуется популярностью у спецподразделений из-за размытого силуэта',
+                quiz: [
+                    {
+                        question: 'Какой камуфляж был впервые применён в зоне СВО в 2022 году и стал основой для нового поколения экипировки ВКПО 3.0?',
+                        options: ['Мох', 'Мультикам', 'Бежевка'],
+                        correct: 1
+                    },
+                    {
+                        question: 'Какими специалистами был разработан комплект вооружения?',
+                        options: ['ТКО-ВКПО', '"ООО" Триада', 'Триада-ТКО'],
+                        correct: 2
+                    },
+                    {
+                        question: 'Какой цвет имеет Поросячка?',
+                        options: ['Синий', 'Бежевый', 'Белый'],
+                        correct: 1
+                    }
+                ]
+            },
+            2: {
+                image: 'photo/minz.jpg',
+                description: 'Минигали Мингазович Шаймуратов – выдающийся сын Башкирии, многогранная личность с невероятной биографией. Он вошел в историю Великой Отечественной войны как опытный разведчик и умелый командир уникальной по своему составу 112-й Башкирской кавалерийской дивизии – единственного боевого соединения, давшего родине 78 Героев Советского Союза, 5 полных кавалеров ордена Славы. Но сам Шаймуратов из-за ужасающей несправедливости был удостоен звания Героя Российской Федерации лишь спустя 77 лет после своей героической гибели. В Кармаскалинском районе Республики Башкортостан на берегу живописной речки Штиль раскинулось село Биштяки. Здесь 15 августа 1899 года появился на свет маленький Минигали. Никто еще и не предполагал, что имя мальчика будет овеяно легендой, и село Биштяки в будущем в его честь будет называться Шаймуратово. Минигали с детства хорошо учился, любил читать книги о боевых походах, выдающихся полководцах. Профессия военного - стала мечтой его жизни. Когда Красная Армия вступила в Уфу, юноша охотно записался добровольцем. Учеба на татаро-башкирских кавалерийских курсах только укрепила желание посвятить дальнейшую жизнь служению Родине. Наряду с учебой, курсанты участвуют в ликвидации контрреволюционных казачьих формирований на Дону, где Шаймуратов проявляет особую отвагу и героизм. За боевые успехи сам командующий 1-й Конной армии С. М. Буденный наградил молодого командира именной серебряной саблей. Шаймуратов служил в Разведуправлении Генерального штаба Красной Армии, отлично владел английским, китайским и тюркскими языками. По словам Константина Симонова: «Он [Шаймуратов] объехал полмира по особым заданиям Правительства». 22 июня 1941 года Шаймуратова назначают командиром 1-го особого кавалерийского полка НКО СССР. Башкирия издавна славилась своими конниками, поэтому было решено сформировать здесь кавалерийскую дивизию. Командиром 112-й Башкирской кавалерийской дивизии принято решение назначить полковника Шаймуратова. Соединение было сформировано из тыловиков, оставленных по брони для обеспечения фронта всем необходимым. У большинства не было начальной военной подготовки. За короткое время Шаймуратов сумел сделать из колхозников настоящих кавалеристов. Свой боевой путь дивизия начала летом 1942 года под Воронежом. Уже в первых сражениях башкирские кавалеристы показали массовый героизм. С 19 ноября 1942 года по 6 февраля 1943 года дивизия с боями прошла 300 километров, нанося противнику огромные потери. За решительность, быстроту и внезапность фашисты прозвали ее «дикой». Сразу же после разгрома немцев под Сталинградом, в феврале 1943 года славная дивизия под командованием М. М. Шаймуратова совершила в Донбассе дерзкий рейд в тыл врага, овладела станцией Чернухино. За эту операцию дивизия была награждена орденом Ленина и переименована в 16-ю гвардейскую, а полковнику Шаймуратову присвоили звание генерал-майора. Минигали Мингазович героически погиб в боях за Родину при выходе из Дебальцевского рейда 23 февраля 1943 года. Тело его покоится на центральной площади г. Петровское Луганской области Украины.',
+                quiz: [
+                    {
+                        question: 'Какое звание получил Минигали Мингазович Шаймуратов после своей гибели в бою, а не сразу после смерти?',
+                        options: ['Герой Советского Союза', 'Герой Российской Федерации', 'Генерал-майор'],
+                        correct: 0
+                    },
+                    {
+                        question: 'В каком году родился Мингали Мингазович Шаймуратов?',
+                        options: ['10 Августа 1870', '15 августа 1899', '16 августа 1900'],
+                        correct: 1
+                    },
+                    {
+                        question: 'В каком месте покоится Мингали Мингазович Шаймуратов?',
+                        options: ['г. Уфа на улице Шаймуратова Башкортостан', 'на центральной площади г. Петровское Луганской области Украины', 'на улице Зеленое г. Красном Луганской области Украины'],
+                        correct: 1
+                    }
+                ]
+            },
+            3: {
+                image: 'photo/nashiwki.jpg',
+                description: 'шевроны бойцов в зоне СВО. С самого начала СВО, главным её символом стала буква Z, за ней - О и V. Параллельно с ними на передовой быстро распространились нашивки, говорящие о принадлежности бойца к определённому воинскому формированию. Военнослужащие знают правила ношения знаков различия в ВС РФ, утверждённые Минобороны. Но неуставные шевроны СВО прочно заняли своё место на военной форме и амуниции бойцов. Для них эти нашиивки – одна из немногих возможностей психологической разрядки в суровых условиях. Помимо принадлежности к роду войск, патчи стали отражать индивидуальные качества бойца. Появились нашивки с крылатыми фразами: «Ландшафтный дизайнер», «Специалист по решению нерешаемых вопросов», «У террористов нет национальности и религии... и ушей», «Нравится не нравится, а Россия расширяется», «Не ходи за мной, я тоже заблудился» и прочими выражениями. Жизнь на передовой пополнилась коллекционированием шевронов. Боевое братство сплотил ещё один общий интерес.',
+                quiz: [
+                    {
+                        question: 'Что изображено на листе слева от нашивок?',
+                        options: ['Медицинская повязка', 'Губная гармошка', 'Нашивка с символом СВО'],
+                        correct: 1
+                    },
+                    {
+                        question: 'Какая буква согласно текстом стала первым символом СВО?',
+                        options: ['Z', 'O', 'V'],
+                        correct: 0
+                    },
+                    {
+                        question: 'Какой целью служат данные нашивки?',
+                        options: ['Определение своих', 'Психологическая разгрузка', 'Запугивание врага'],
+                        correct: 1
+                    }
+                ]
+            },
+            4: {
+                image: 'photo/start.png',
+                description: 'В центре снимка виден лист с надписью «Подсумок, Вог-25», что указывает на наличие подсумков для переноски 40-мм осколочных гранат ВОГ-25, используемых в подствольных гранатометах, таких как ГП-25 «Костёр». Также присутствуют другие подсумки и разгрузочная система с креплением MOLLE. Медицинские средства: Прочее снаряжение: Комплект дополнен различными сумками, рюкзаками и другими предметами экипировки в камуфляжной расцветке. ',
+                quiz: [
+                    {
+                        question: 'Что изображено на листе в центре снимка, согласно тексту?',
+                        options: ['Подсумок Вог-22', 'Подсумок Вог-25', 'Подсумок Вог-26'],
+                        correct: 1
+                    },
+                    {
+                        question: 'какого цвета бумажные записки?',
+                        options: ['Синий', 'Красный', 'Желтый'],
+                        correct: 2
+                    },
+                    {
+                        question: 'Что написано на брошуре?',
+                        options: ['Звание-Герой', 'Знание-Герой', 'Родина-мать зовёт'],
+                        correct: 1
+                    }
+                ]
+            },
+        };
+
+        // Счетчики очков
+        let score = 0;
+        let correctAnswers = 0;
+        let incorrectAnswers = 0;
+        let currentExhibitId = null;
+
+        // DOM элементы
+        const modal = document.getElementById('exhibitModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalDescription = document.getElementById('modalDescription');
+        const quizContainer = document.getElementById('quizContainer');
+        const questionElement = document.getElementById('question');
+        const optionsElement = document.getElementById('options');
+        const resultMessage = document.getElementById('resultMessage');
+        const nextBtn = document.getElementById('nextBtn');
+        const closeBtn = document.querySelector('.close-btn');
+        const welcomeVideo = document.getElementById('welcomeVideo');
+        const soundControl = document.getElementById('soundControl');
+
+        // Обработчики событий для экспонатов
+        document.querySelectorAll('.exhibit').forEach(exhibit => {
+            exhibit.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                showExhibit(id);
+            });
+        });
+
+        // Закрытие модального окна
+        closeBtn.addEventListener('click', closeModal);
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Переключение звука
+        soundControl.addEventListener('click', function() {
+            if (welcomeVideo.muted) {
+                welcomeVideo.muted = false;
+                soundControl.textContent = 'Выключить звук';
+            } else {
+                welcomeVideo.muted = true;
+                soundControl.textContent = 'Включить звук';
+            }
+        });
+
+        // Показать экспонат
+        function showExhibit(id) {
+            const exhibit = exhibits[id];
+            if (!exhibit) return;
+
+            currentExhibitId = id;
+
+            modalImage.src = exhibit.image;
+            modalDescription.textContent = exhibit.description;
+            quizContainer.classList.add('hidden');
+            resultMessage.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+
+            modal.style.display = 'flex';
+        }
+
+        // Закрыть модальное окно
+        function closeModal() {
+            modal.style.display = 'none';
+            quizContainer.classList.add('hidden');
+            resultMessage.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+        }
+
+        // Начать викторину
+        function startQuiz() {
+            if (currentExhibitId === null) return;
+
+            quizContainer.classList.remove('hidden');
+            currentQuestion = 0;
+            const exhibit = exhibits[currentExhibitId];
+            questions = exhibit.quiz;
+            score = 0;
+            showQuestion();
+        }
+
+        let currentQuestion = 0;
+        let questions = [];
+
+        // Показать вопрос
+        function showQuestion() {
+            const question = questions[currentQuestion];
+            if (!question) return;
+
+            questionElement.textContent = question.question;
+
+            optionsElement.innerHTML = '';
+            question.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.textContent = option;
+                optionElement.onclick = () => selectOption(index);
+                optionsElement.appendChild(optionElement);
+            });
+
+            resultMessage.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+        }
+
+        // Выбрать вариант ответа
+        function selectOption(selectedIndex) {
+            const question = questions[currentQuestion];
+            const options = document.querySelectorAll('.option');
+
+            options.forEach(option => {
+                option.style.pointerEvents = 'none';
+            });
+
+            if (selectedIndex === question.correct) {
+                options[selectedIndex].classList.add('correct');
+                resultMessage.textContent = 'Правильно!';
+                resultMessage.className = 'result-message correct-message';
+                score += 10;
+                correctAnswers++;
+            } else {
+                options[selectedIndex].classList.add('incorrect');
+                options[question.correct].classList.add('correct');
+                resultMessage.textContent = 'Неправильно!';
+                resultMessage.className = 'result-message incorrect-message';
+                score -= 5;
+                incorrectAnswers++;
+            }
+
+            resultMessage.classList.remove('hidden');
+            updateScore();
+            nextBtn.classList.remove('hidden');
+            nextBtn.onclick = () => nextQuestion();
+        }
+
+        // Следующий вопрос
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                resultMessage.textContent = `Тест завершен! Ваши очки: ${score}`;
+                resultMessage.className = 'result-message correct-message';
+                nextBtn.classList.add('hidden');
+            }
+        }
+
+        // Обновить счетчик
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctAnswers;
+            document.getElementById('incorrect').textContent = incorrectAnswers;
+        }
+
+        // Инициализация счетчика
+        updateScore();
+    </script>
+</body>
+</html>
